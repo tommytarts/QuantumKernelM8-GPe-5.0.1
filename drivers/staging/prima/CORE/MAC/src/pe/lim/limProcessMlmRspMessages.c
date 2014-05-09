@@ -2819,9 +2819,9 @@ limProcessStaMlmAddBssRspFT(tpAniSirGlobal pMac, tpSirMsgQ limMsgQ, tpPESession 
 
     pAddStaParams->shortPreambleSupported = (tANI_U8)psessionEntry->beaconParams.fShortPreamble;
 #ifdef WLAN_FEATURE_11AC
-    limPopulatePeerRateSet(pMac, &pAddStaParams->supportedRates, NULL, false,psessionEntry, NULL);
+    limPopulateOwnRateSet(pMac, &pAddStaParams->supportedRates, NULL, false,psessionEntry, NULL);
 #else
-    limPopulatePeerRateSet(pMac, &pAddStaParams->supportedRates, NULL, false,psessionEntry);
+    limPopulateOwnRateSet(pMac, &pAddStaParams->supportedRates, NULL, false,psessionEntry);
 #endif
 
     if( psessionEntry->htCapability)
@@ -3921,10 +3921,6 @@ void limProcessFinishScanRsp(tpAniSirGlobal pMac,  void *body)
     pFinishScanParam = (tpFinishScanParams) body;
     status = pFinishScanParam->status;
     vos_mem_free(body);
-
-    limLog(pMac, LOGW, FL("Rcvd FinishScanRsp in state %d"),
-                        pMac->lim.gLimHalScanState);
-
     switch(pMac->lim.gLimHalScanState)
     {
         case eLIM_HAL_FINISH_SCAN_WAIT_STATE:
@@ -3970,7 +3966,7 @@ void limProcessFinishScanRsp(tpAniSirGlobal pMac,  void *body)
 //end WLAN_SUSPEND_LINK Related
 
         default:
-            limLog(pMac, LOGE, FL("Rcvd FinishScanRsp not in WAIT State, state %d"),
+            limLog(pMac, LOGW, FL("Rcvd FinishScanRsp not in WAIT State, state %d"),
                         pMac->lim.gLimHalScanState);
             break;
     }

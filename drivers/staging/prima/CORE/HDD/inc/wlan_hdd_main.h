@@ -174,9 +174,6 @@
 #ifdef WLAN_FEATURE_11W
 #define WLAN_HDD_SA_QUERY_ACTION_FRAME 8
 #endif
-#define WLAN_HDD_CHANNEL_IN_UNII_1_BAND(center_freq) \
-(((center_freq) == 5180 ) || ((center_freq) == 5200) \
-|| ((center_freq) == 5220) || ((center_freq) == 5240))
 
 #define WLAN_HDD_PUBLIC_ACTION_TDLS_DISC_RESP 14
 #define WLAN_HDD_TDLS_ACTION_FRAME 12
@@ -196,24 +193,9 @@
 #define GTK_OFFLOAD_DISABLE 1
 #endif
 
-#ifdef FEATURE_WLAN_SCAN_PNO
-#define HDD_PNO_SCAN_TIMERS_SET_ONE      1
-/* value should not be greater than PNO_MAX_SCAN_TIMERS */
-#define HDD_PNO_SCAN_TIMERS_SET_MULTIPLE 6
-#endif
-
 #define HDD_MAC_ADDR_LEN    6
 #define HDD_ROAM_SCAN_CHANNEL_SWITCH_TIME 3
 typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
-
-struct statsContext
-{
-   struct completion completion;
-   hdd_adapter_t *pAdapter;
-   unsigned int magic;
-};
-
-#define STATS_CONTEXT_MAGIC 0x53544154   //STAT
 
 typedef struct hdd_tx_rx_stats_s
 {
@@ -612,9 +594,6 @@ typedef struct {
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t txSuspended[NUM_TX_QUEUES];
 
-   /**Track whether 3/4th of resources are used on softAP/P2P GO side. */
-   v_BOOL_t vosLowResource;
-
    /** Track QoS status of station */
    v_BOOL_t isQosEnabled;
 
@@ -804,9 +783,6 @@ struct hdd_adapter_s
    hdd_list_t wmm_tx_queue[NUM_TX_QUEUES];
    /**Track whether VOS is in a low resource state*/
    v_BOOL_t isVosOutOfResource;
-
-   /**Track whether 3/4th of resources are used on STA/p2p client side */
-   v_BOOL_t isVosLowResource;
   
    /**Track whether OS TX queue has been disabled.*/
    v_BOOL_t isTxSuspended[NUM_TX_QUEUES];
@@ -855,9 +831,6 @@ struct hdd_adapter_s
    v_U32_t magic;
    v_BOOL_t higherDtimTransition;
    v_BOOL_t survey_idx;
-#if defined(FEATURE_WLAN_CCX) && defined(FEATURE_WLAN_CCX_UPLOAD)
-   tAniTrafStrmMetrics tsmStats;
-#endif
 };
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
@@ -1053,7 +1026,6 @@ struct hdd_context_s
     tANI_U16 connected_peer_count;
     tdls_scan_context_t tdls_scan_ctxt;
 #endif
-
     hdd_traffic_monitor_t traffic_monitor;
 
     /* MC/BC Filter state variable
@@ -1063,11 +1035,12 @@ struct hdd_context_s
     v_U8_t configuredMcastBcastFilter;
 
     v_U8_t sus_res_mcastbcast_filter;
+
+    vos_timer_t hdd_p2p_go_conn_is_in_progress;
+
 #ifdef FEATURE_WLAN_LPHB
     lphbEnableStruct  lphbEnableReq;
 #endif /* FEATURE_WLAN_LPHB */
-
-    v_BOOL_t sus_res_mcastbcast_filter_valid;
 
     /* debugfs entry */
     struct dentry *debugfs_phy;
@@ -1159,7 +1132,6 @@ void hdd_set_ssr_required(e_hdd_ssr_required value);
 VOS_STATUS hdd_enable_bmps_imps(hdd_context_t *pHddCtx);
 VOS_STATUS hdd_disable_bmps_imps(hdd_context_t *pHddCtx, tANI_U8 session_type);
 
-void wlan_hdd_cfg80211_update_reg_info(struct wiphy *wiphy);
 VOS_STATUS wlan_hdd_restart_driver(hdd_context_t *pHddCtx);
 void hdd_exchange_version_and_caps(hdd_context_t *pHddCtx);
 void hdd_set_pwrparams(hdd_context_t *pHddCtx);

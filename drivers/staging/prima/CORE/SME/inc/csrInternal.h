@@ -610,7 +610,6 @@ typedef struct tagCsrConfig
 
 #ifdef FEATURE_WLAN_LFR
     tANI_U8      isFastRoamIniFeatureEnabled;
-    tANI_U8      MAWCEnabled;
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
     tANI_U8      isRoamOffloadScanEnabled;
     tANI_BOOLEAN bFastRoamInConIniFeatureEnabled;
@@ -627,7 +626,6 @@ typedef struct tagCsrConfig
     tANI_U8       nImmediateRoamRssiDiff;
     tANI_BOOLEAN  nRoamPrefer5GHz;
     tANI_BOOLEAN  nRoamIntraBand;
-    tANI_BOOLEAN  isWESModeEnabled;
     tANI_BOOLEAN  nRoamScanControl;
     tANI_U8       nProbes;
     tANI_U16      nRoamScanHomeAwayTime;
@@ -661,7 +659,6 @@ typedef struct tagCsrConfig
      * Enable/Disable heartbeat offload
      */
     tANI_BOOLEAN enableHeartBeatOffload;
-    tANI_U8 isAmsduSupportInAMPDU;
 }tCsrConfig;
 
 typedef struct tagCsrChannelPowerInfo
@@ -730,7 +727,6 @@ typedef struct tagCsrScanStruct
     tANI_U8 countryCode11d[WNI_CFG_COUNTRY_CODE_LEN];
     v_REGDOMAIN_t domainIdDefault;  //default regulatory domain
     v_REGDOMAIN_t domainIdCurrent;  //current regulatory domain
-    tCsrBssid currentCountryBssid;  // Bssid for current country code
     tANI_BOOLEAN f11dInfoApplied;
     tANI_BOOLEAN fCancelIdleScan;
 #ifdef FEATURE_WLAN_WAPI
@@ -936,9 +932,6 @@ typedef struct tagCsrRoamSession
     tANI_U8 prevOpChannel;
     tANI_U16 clientDissSecs;
     tANI_U32 roamTS1;
-#if defined(FEATURE_WLAN_CCX_UPLOAD)
-    tCsrCcxCckmIe suppCckmIeInfo;
-#endif
 #endif
     tANI_U8 bRefAssocStartCnt;   //Tracking assoc start indication
    /* to force the AP initiate fresh 802.1x authentication after re-association need to clear
@@ -997,7 +990,6 @@ typedef struct tagCsrRoamStruct
 #endif
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
     tANI_U8        RoamRssiDiff;
-    tANI_BOOLEAN   isWESModeEnabled;
 #endif
 }tCsrRoamStruct;
 
@@ -1255,13 +1247,6 @@ eHalStatus csrGetRoamRssi(tpAniSirGlobal pMac,
                           void * pContext,
                           void * pVosContext);
 #endif
-
-#if defined(FEATURE_WLAN_CCX) && defined(FEATURE_WLAN_CCX_UPLOAD)
-eHalStatus csrGetTsmStats(tpAniSirGlobal pMac, tCsrTsmStatsCallback callback, tANI_U8 staId,
-                              tCsrBssid bssId, void *pContext, void* pVosContext,
-                              tANI_U8 tid);
-#endif  /* FEATURE_WLAN_CCX && FEATURE_WLAN_CCX_UPLOAD */
-
 eHalStatus csrRoamRegisterCallback(tpAniSirGlobal pMac, csrRoamCompleteCallback callback, void *pContext);
 /* ---------------------------------------------------------------------------
     \fn csrGetConfigParam
@@ -1380,8 +1365,6 @@ tANI_BOOLEAN csrRoamIs11rAssoc(tpAniSirGlobal pMac);
 #ifdef FEATURE_WLAN_CCX
 //Returns whether the current association is a CCX assoc or not
 tANI_BOOLEAN csrRoamIsCCXAssoc(tpAniSirGlobal pMac);
-tANI_BOOLEAN csrRoamIsCcxIniFeatureEnabled(tpAniSirGlobal pMac);
-tANI_BOOLEAN csrNeighborRoamIsCCXAssoc(tpAniSirGlobal pMac);
 #endif
 
 //Remove this code once SLM_Sessionization is supported

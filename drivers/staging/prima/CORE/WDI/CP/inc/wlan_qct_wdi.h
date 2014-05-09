@@ -4550,7 +4550,7 @@ typedef struct
   wpt_uint8    ucChannelCount;
 
   /*the actual channels*/
-  wpt_uint8    aChannels[WDI_PNO_MAX_NETW_CHANNELS_EX];
+  wpt_uint8    aChannels[WDI_PNO_MAX_NETW_CHANNELS];
 
   /*rssi threshold that a network must meet to be considered, 0 - for any*/
   wpt_uint8    rssiThreshold;
@@ -4665,7 +4665,6 @@ typedef struct WDIMobilityDomainInfo
 typedef struct
 {
   wpt_boolean RoamScanOffloadEnabled;
-  wpt_boolean MAWCEnabled;
   wpt_uint8   LookupThreshold;
   wpt_uint8   RoamRssiDiff;
   wpt_uint8   ChannelCacheType;

@@ -2042,8 +2042,7 @@ void limHandleMissedBeaconInd(tpAniSirGlobal pMac, tpSirMsgQ pMsg)
          (pMac->pmm.gPmmState == ePMM_STATE_WOWLAN) )
     {
         pMac->pmm.inMissedBeaconScenario = TRUE;
-        PELOGE(limLog(pMac, LOGE,
-              FL("Sending EXIT_BMPS_IND to SME due to Missed beacon from FW"));)
+        PELOG1(limLog(pMac, LOG1, FL("Sending EXIT_BMPS_IND to SME "));)
         limSendExitBmpsInd(pMac, eSME_MISSED_BEACON_IND_RCVD);
     }
 /* ACTIVE_MODE_HB_OFFLOAD */
