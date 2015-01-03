@@ -2196,7 +2196,6 @@ typedef struct sAniChangeCountryCodeReq
     void                    *changeCCCallback;
     void                    *pDevContext; //device context
     void                    *pVosContext; //voss context
-    
 } tAniChangeCountryCodeReq, *tpAniChangeCountryCodeReq;
 
 typedef struct sAniDHCPStopInd
