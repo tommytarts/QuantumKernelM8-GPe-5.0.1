@@ -615,6 +615,7 @@ int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
    if ((SIOCDEVPRIVATE + 1) == cmd)
    {
        hdd_context_t *pHddCtx = (hdd_context_t*)pAdapter->pHddCtx;
+       struct wiphy *wiphy = pHddCtx->wiphy;
 
        VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
                   "%s: Received %s cmd from Wi-Fi GUI***", __func__, command);
@@ -658,6 +659,14 @@ int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
                VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL,
                        "%s: SME Change Country code fail ret=%d\n",__func__, ret);
 
+           }
+           /* If you get a 00 country code it means you are world roaming.
+           In case of world roaming, country code should be updated by
+           DRIVER COUNTRY */
+           if (memcmp(pHddCtx->cfg_ini->crdaDefaultCountryCode,
+                            CFG_CRDA_DEFAULT_COUNTRY_CODE_DEFAULT , 2) == 0)
+           {
+              regulatory_hint(wiphy, "00");
            }
        }
        /*
@@ -1700,7 +1709,60 @@ int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
            sme_HandoffRequest(pHddCtx->hHal, &handoffInfo);
 #endif
        }
-#endif
+       else if (strncmp(command, "SETWESMODE", 10) == 0)
+       {
+           tANI_U8 *value = command;
+           tANI_BOOLEAN wesMode = CFG_ENABLE_WES_MODE_NAME_DEFAULT;
+
+           /* Move pointer to ahead of SETWESMODE<delimiter> */
+           value = value + 11;
+           /* Convert the value from ascii to integer */
+           ret = kstrtou8(value, 10, &wesMode);
+           if (ret < 0)
+           {
+               /* If the input value is greater than max value of datatype, then also
+                  kstrtou8 fails */
+               VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                      "%s: kstrtou8 failed range [%d - %d]", __func__,
+                      CFG_ENABLE_WES_MODE_NAME_MIN,
+                      CFG_ENABLE_WES_MODE_NAME_MAX);
+               ret = -EINVAL;
+               goto exit;
+           }
+
+           if ((wesMode < CFG_ENABLE_WES_MODE_NAME_MIN) ||
+               (wesMode > CFG_ENABLE_WES_MODE_NAME_MAX))
+           {
+               VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                      "WES Mode value %d is out of range"
+                      " (Min: %d Max: %d)", wesMode,
+                      CFG_ENABLE_WES_MODE_NAME_MIN,
+                      CFG_ENABLE_WES_MODE_NAME_MAX);
+               ret = -EINVAL;
+               goto exit;
+           }
+           VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+                      "%s: Received Command to Set WES Mode rssi diff = %d", __func__, wesMode);
+
+           pHddCtx->cfg_ini->isWESModeEnabled = wesMode;
+           sme_UpdateWESMode((tHalHandle)(pHddCtx->hHal), wesMode);
+       }
+       else if (strncmp(priv_data.buf, "GETWESMODE", 10) == 0)
+       {
+           tANI_BOOLEAN wesMode = sme_GetWESMode((tHalHandle)(pHddCtx->hHal));
+           char extra[32];
+           tANI_U8 len = 0;
+
+           len = snprintf(extra, sizeof(extra), "%s %d", command, wesMode);
+           if (copy_to_user(priv_data.buf, &extra, len + 1))
+           {
+               VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                  "%s: failed to copy data to user buffer", __func__);
+               ret = -EFAULT;
+               goto exit;
+           }
+       }
+#endif /* WLAN_FEATURE_VOWIFI_11R || FEATURE_WLAN_CCX || FEATURE_WLAN_LFR */
 #ifdef FEATURE_WLAN_LFR
        else if (strncmp(command, "SETFASTROAM", 11) == 0)
        {
@@ -1963,6 +2025,7 @@ int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 
            pHddCtx->cfg_ini->isOkcIniFeatureEnabled = okcMode;
        }
+#endif  /* FEATURE_WLAN_OKC */
        else if (strncmp(priv_data.buf, "GETROAMSCANCONTROL", 18) == 0)
        {
            tANI_BOOLEAN roamScanControl = sme_GetRoamScanControl((tHalHandle)(pHddCtx->hHal));
@@ -1978,7 +2041,6 @@ int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
                goto exit;
            }
        }
-#endif
 #ifdef WLAN_FEATURE_PACKET_FILTERING
        else if (strncmp(command, "ENABLE_PKTFILTER_IPV6", 21) == 0)
        {
@@ -5867,7 +5929,7 @@ int hdd_wlan_startup(struct device *dev )
    /*
     * cfg80211: wiphy allocation
     */
-   wiphy = wlan_hdd_cfg80211_init(sizeof(hdd_context_t)) ;
+   wiphy = wlan_hdd_cfg80211_wiphy_alloc(sizeof(hdd_context_t)) ;
 
    if(wiphy == NULL)
    {
@@ -5966,13 +6028,13 @@ int hdd_wlan_startup(struct device *dev )
       pHddCtx->cfg_ini->nthBeaconFilter = 1;
    }
    /*
-    * cfg80211: Initialization and registration ...
+    * cfg80211: Initialization  ...
     */
-   if (0 < wlan_hdd_cfg80211_register(dev, wiphy, pHddCtx->cfg_ini))
+   if (0 < wlan_hdd_cfg80211_init(dev, wiphy, pHddCtx->cfg_ini))
    {
       hddLog(VOS_TRACE_LEVEL_FATAL, 
-              "%s: wlan_hdd_cfg80211_register return failure", __func__);
-      goto err_wiphy_reg;
+              "%s: wlan_hdd_cfg80211_init return failure", __func__);
+      goto err_config;
    }
 
    // Update VOS trace levels based upon the cfg.ini
@@ -6029,7 +6091,7 @@ int hdd_wlan_startup(struct device *dev )
       if(!VOS_IS_STATUS_SUCCESS( status ))
       {
          hddLog(VOS_TRACE_LEVEL_FATAL,"%s: vos_watchdog_open failed",__func__);
-         goto err_wiphy_reg;
+         goto err_wdclose;
       }
    }
 
@@ -6187,6 +6249,14 @@ int hdd_wlan_startup(struct device *dev )
       hddLog(VOS_TRACE_LEVEL_FATAL,"%s: hdd_post_voss_start_config failed", 
          __func__);
       goto err_vosstop;
+   }
+   wlan_hdd_cfg80211_update_reg_info( wiphy );
+
+   /* registration of wiphy dev with cfg80211 */
+   if (0 > wlan_hdd_cfg80211_register(wiphy))
+   {
+       hddLog(VOS_TRACE_LEVEL_ERROR,"%s: wiphy register failed", __func__);
+       goto err_vosstop;
    }
 
    if (VOS_STA_SAP_MODE == hdd_get_conparam())
@@ -6432,6 +6502,7 @@ err_bap_close:
 
 err_close_adapter:
    hdd_close_all_adapters( pHddCtx );
+   wiphy_unregister(wiphy) ;
 
 err_vosstop:
    vos_stop(pVosContext);
@@ -6451,9 +6522,6 @@ err_clkvote:
 err_wdclose:
    if(pHddCtx->cfg_ini->fIsLogpEnabled)
       vos_watchdog_close(pVosContext);
-
-err_wiphy_reg:
-   wiphy_unregister(wiphy) ; 
 
 err_config:
    kfree(pHddCtx->cfg_ini);
