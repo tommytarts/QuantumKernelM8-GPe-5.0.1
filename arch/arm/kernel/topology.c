@@ -68,7 +68,7 @@ struct cpu_efficiency {
  * Processors that are not defined in the table,
  * use the default SCHED_POWER_SCALE value for cpu_scale.
  */
-static const struct cpu_efficiency table_efficiency[] = {
+	struct cpu_efficiency table_efficiency[] = {
 	{"qcom,krait", 3891},
 	{"arm,cortex-a15", 3891},
 	{"arm,cortex-a7",  2048},
