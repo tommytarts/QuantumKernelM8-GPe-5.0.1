@@ -217,6 +217,9 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 	if (mode != POWER_SUSPEND_USERSPACE) // Yank555.lu : Only allow sysfs changes in userspace mode
 		return -EINVAL;
 
+<<<<<<< HEAD
+	sscanf(buf, "%d\n", &data);
+=======
 	sscanf(buf, "%d\n", &new_state);
 
 	#ifdef POWER_SUSPEND_DEBUG
@@ -224,6 +227,7 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 	#endif
 	if(new_state == POWER_SUSPEND_ACTIVE || new_state == POWER_SUSPEND_INACTIVE)
 		set_power_suspend_state(new_state);
+>>>>>>> 928e6b9... kernel/power/powersuspend: cumulative update to version 1.5
 
 	if(data == 1 || data == 0) {
 		set_power_suspend_state(data);
@@ -251,10 +255,15 @@ static ssize_t power_suspend_mode_store(struct kobject *kobj,
 	sscanf(buf, "%d\n", &data);
 
 	switch (data) {
+<<<<<<< HEAD
+		case POWER_SUSPEND_KERNEL:
+		case POWER_SUSPEND_USERSPACE:	mode = data;
+=======
 		case POWER_SUSPEND_AUTOSLEEP:
 		case POWER_SUSPEND_PANEL:
 		case POWER_SUSPEND_USERSPACE:
 		case POWER_SUSPEND_HYBRID:	mode = data;
+>>>>>>> 928e6b9... kernel/power/powersuspend: cumulative update to version 1.5
 						return count;
 		default:
 			return -EINVAL;
@@ -321,10 +330,14 @@ static int __init power_suspend_init(void)
 		return -ENOMEM;
 	}
 
+<<<<<<< HEAD
+	mode = POWER_SUSPEND_USERSPACE;
+=======
 //	mode = POWER_SUSPEND_AUTOSLEEP;	// Yank555.lu : Default to autosleep mode
 //	mode = POWER_SUSPEND_USERSPACE;	// Yank555.lu : Default to userspace mode
 //	mode = POWER_SUSPEND_PANEL;	// Yank555.lu : Default to display panel mode
 	mode = POWER_SUSPEND_HYBRID;	// Yank555.lu : Default to display panel / autosleep hybrid mode
+>>>>>>> 928e6b9... kernel/power/powersuspend: cumulative update to version 1.5
 
 	return 0;
 }
